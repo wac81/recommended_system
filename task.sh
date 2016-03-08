@@ -40,3 +40,7 @@ sleep 1
 #python service_viva.py
 #gunicorn -w4 -t 240 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0
 gunicorn -w4 -t 600 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0 --worker-connections 500
+
+#ssh root@10.1.1.1 /home/workspace/xx.sh > result.log
+#or
+#ssh root@10.1.1.1 gunicorn -w4 -t 240 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0
