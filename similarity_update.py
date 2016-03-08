@@ -81,7 +81,7 @@ def sim_update(results):
 
     # Preporcessing text. Get corpus_add.
     for postfile in results:
-        text_del = delstopwords(postfile['text'])
+        text_del = delstopwords(stripTags(postfile['text']))
         text_vec = jieba.lcut(text_del)
         fp = open(docpath + postfile['name'], 'w')
         fp.write(postfile['text'].encode('utf-8'))
@@ -209,7 +209,22 @@ def prefix_map(result_in):
     fp.close()
     return result_out
 
+def stripTags(s):
+    ''' Strips HTML tags.
+        Taken from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/440481
+    '''
+    intag = [False]
 
+    def chk(c):
+        if intag[0]:
+            intag[0] = (c != '>')
+            return False
+        elif c == '<':
+            intag[0] = True
+            return False
+        return True
+
+    return ''.join(c for c in s if chk(c))
 def mkdir(path):
     # 引入模块
     import os

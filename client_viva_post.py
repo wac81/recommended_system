@@ -1,4 +1,4 @@
-# coding=utf8
+# -*- coding:utf-8 -*-
 
 import requests
 import threading
@@ -16,9 +16,9 @@ temp =  json.dumps([{'name':'3760840152523826487_柳永是哪个朝代的','text
 payloadfiles = {'files':temp}
 #
 # payloadfiles = {'files':None}
-# r = requests.post("http://127.0.0.1:3000/getfiles/post",data=payloadfiles)
+r = requests.post("http://127.0.0.1:3000/getfiles/post",data=payloadfiles)
 # r = requests.post("http://115.28.254.33:8088/getfiles/post",data=payloadfiles)
-# print r
+print r
 
 
 r = requests.post("http://115.28.254.33:8088/similar/post",data=payload)
