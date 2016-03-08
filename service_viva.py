@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-
+# coding=utf-8
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 import re
@@ -7,13 +7,7 @@ import json
 import codecs
 import jieba
 jieba.initialize()   #manual initialize jieba
-
-# import jieba.analyse
-import jieba.posseg as pseg
-# import redis
-import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
+import cPickle
 
 import os
 from gensim import corpora, models, similarities
@@ -23,11 +17,13 @@ app = Flask(__name__)
 
 project_path = './'
 docpath='/home/workspace/news'
+pkl_file_name = "./prefix_map/filename_map.pkl"
 
 # @app.before_first_request
 # @app.before_request
 def appd():
     app.config['stopwords'] = codecs.open(project_path + 'stopwords.txt', encoding='UTF-8').read()
+    # app.config['stopwords'] = open('./stopwords.txt').read()
     app.config['dictionary'] = corpora.Dictionary.load(project_path + 'lsi/' + 'viva.dict')
     # baobao changed 4 lines
     # app.config['lsi'] = models.LsiModel.load(project_path + 'lsi/' + 'viva.lsi')
@@ -36,7 +32,16 @@ def appd():
     app.config['index'] = similarities.docsim.Similarity.load(project_path + 'lsi/' + 'viva.index')
     files = os.listdir('./news/')
     app.config['files'] = sorted(files, key=lambda x: (int(re.search(r'([0-9]+)(_)', x).group(1)),x))
-    # app.config['files'] = files
+
+    if os.path.isfile(pkl_file_name):
+        t_fp = open(pkl_file_name, 'rb')
+        filesd = cPickle.load(t_fp)
+        t_fp.close()
+    else:
+        print("filename_map.pkl have not created")
+        filesd = {}
+    app.config['files_dict'] = filesd
+
     print('All loaded')
 appd()
 
@@ -103,22 +108,24 @@ def check_prefix(file_in):
     :param file_in:  string
     :return: string
     """
-    import cPickle
+
     # try:
     #     file_a = file_in.decode('gbk')
     # except Exception as e:
     file_a = file_in.decode('utf-8')
 
-    try:
-        fp = open("./prefix_map/filename_map.pkl", 'rb')
-        files = cPickle.load(fp)
-        fp.close()
-    except Exception as e:
-        files = {}
+    # try:
+    #     fp = open(, 'rb')
+    #     files = cPickle.load(fp)
+    #     fp.close()
+    # except Exception as e:
+    #     files = {}
+    filesd = app.config['files_dict']
 
-    if files.has_key(file_a):
+
+    if file_a in filesd.keys():
         print("From dict %s" % file_a)
-        return files[file_a]
+        return filesd[file_a]
     else:
         print("From news %s" % file_in)
         return file_in
@@ -126,7 +133,7 @@ def check_prefix(file_in):
 
 def similar_search(request):
     doc = request
-    doc = doc.replace(r'\n', '').replace(r'▉', '').replace(r'\t', '').replace(' ', '')
+    doc = doc.replace(u'\n', '').replace(u'▉', '').replace(u'\t', '').replace(u' ', '')
     doc = stripTags(doc)
     doc = delstopwords(doc)
     vec_bow = app.config['dictionary'].doc2bow(jieba.lcut(doc))

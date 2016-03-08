@@ -29,7 +29,11 @@ rm -rf /home/workspace/lsi/viva_temp.mm.index
 
 # copy lsi model to all machines
 cp /home/workspace/lsitemp/* /home/workspace/lsi/
+
+# A machine
 scp /home/workspace/lsitemp/* root@10.144.141.134:/home/workspace/lsi
+
+# B machine
 #scp /home/workspace/lsitemp/* root@10.144.141.135:/home/workspace/lsi
 
 

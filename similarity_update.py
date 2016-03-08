@@ -127,52 +127,53 @@ def sim_update(results):
     # os.system('./after_update.sh')
     # print("Shell done!")
 
-def check_prefix(file_in):
-    """
-    baobao add for checking files prefix map
-    :param file_in:  string
-    :return: string
-    """
-    import cPickle
-    num_in = file_in.split('_')[0]
+# def check_prefix(file_in):
+#     """
+#     baobao add for checking files prefix map
+#     :param file_in:  string
+#     :return: string
+#     """
+#     import cPickle
+#     num_in = file_in.split('_')[0]
+#
+#     prefix_filename = "./prefix_map/"
+#     if os.path.exists(prefix_filename):
+#         return file_in
+#
+#     if os.path.isfile("./prefix_map/filename_map.pkl"):
+#         fp = open("./prefix_map/filename_map.pkl", 'rb')
+#         files = cPickle.load(fp)
+#         fp.close()
+#     else:
+#         files = {}
+#
+#     for i in files:
+#         if i.split('_')[0] == num_in:
+#             return files[i]
+#         else:
+#             continue
+#     return file_in
 
-    prefix_filename = "./prefix_map/"
-    if os.path.exists(prefix_filename):
-        return file_in
 
-    if os.path.isfile("./prefix_map/filename_map.pkl"):
-        fp = open("./prefix_map/filename_map.pkl", 'rb')
-        files = cPickle.load(fp)
-        fp.close()
-    else:
-        files = {}
-
-    for i in files:
-        if i.split('_')[0] == num_in:
-            return files[i]
-        else:
-            continue
-    return file_in
-
-def check_repet_new(result_in):
-    """
-    检查是否有重复的文章
-    :param result_in: [{}{}{}]
-    :return:[{}{}{}]
-    """
-    files = os.listdir("./news/")
-    result_out = []
-    for i in result_in:
-        flag = False
-        name = re.search(r'(_)(.*)', i['name']).group(2)
-        for j in files:
-            temp = check_prefix(j)
-            if name.split('_')[0] == temp.split('_'):
-                flag = True
-                break
-        if not flag:
-            result_out.append(i)
-    return result_out
+# def check_repet_new(result_in):
+#     """
+#     检查是否有重复的文章
+#     :param result_in: [{}{}{}]
+#     :return:[{}{}{}]
+#     """
+#     files = os.listdir("./news/")
+#     result_out = []
+#     for i in result_in:
+#         flag = False
+#         name = re.search(r'(_)(.*)', i['name']).group(2)
+#         for j in files:
+#             temp = check_prefix(j)
+#             if name.split('_')[0] == temp.split('_'):
+#                 flag = True
+#                 break
+#         if not flag:
+#             result_out.append(i)
+#     return result_out
 
 
 def prefix_map(result_in):
