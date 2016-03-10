@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# coding=utf-8
+# -*- coding:utf-8 -*-
 
 import codecs
 import jieba
@@ -42,11 +42,11 @@ def getFile(docpath):
     for filename in files:
         count += 1
         print count
-        try:
-            yield codecs.open(docpath + filename).read()
-            print filename
-        except Exception as e:
-            print e
+        # try:
+        yield codecs.open(docpath + filename).read()
+        print filename
+        # except Exception as e:
+        #     print e
 
 
 

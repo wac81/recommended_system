@@ -27,20 +27,32 @@ rm -rf /home/workspace/lsi/viva.mm
 rm -rf /home/workspace/lsi/viva_temp.mm
 rm -rf /home/workspace/lsi/viva_temp.mm.index
 
-# copy lsi model to all machines
+
 cp /home/workspace/lsitemp/* /home/workspace/lsi/
-
 # A machine
-scp /home/workspace/lsitemp/* root@10.144.141.134:/home/workspace/lsi
-
+# copy lsi model to all machines
+# remote pkill gunicorn python
+ssh root@10.251.133.225  pkill -9 gunicorn
+ssh root@10.251.133.225  pkill -9 python
+# remote del and cp news & lsi
+ssh root@10.251.133.225 rm -rf /home/workspace/news
+ssh root@10.251.133.225 rm -rf /home/workspace/lsi
+scp -r /home/workspace/news/ root@10.251.133.225:/home/workspace/
+scp -r /home/workspace/lsi/ root@10.251.133.225:/home/workspace/
+# cp file map
+ssh root@10.251.133.225 rm -rf /home/workspace/prefix_map/
+scp -r /home/workspace/prefix_map/ root@10.251.133.225:/home/workspace/
 # B machine
 #scp /home/workspace/lsitemp/* root@10.144.141.135:/home/workspace/lsi
 
+# run getfiles
+python similarity_update_service.py
 
-cd /home/workspace/
+# run remote similar find
+ssh root@10.251.133.225 cd /home/workspace/
 sleep 1
 #gunicorn -w4 -t 240 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0
-gunicorn -w4 -t 6000 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0 --worker-connections 500
+ssh root@10.251.133.225 gunicorn -w4 -t 6000 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0 --worker-connections 500
 
 
 

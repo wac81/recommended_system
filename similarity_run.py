@@ -5,7 +5,7 @@ import sys
 # import shutil
 sys.path.append("./program/")
 import time
-
+import multiprocessing
 # def f(x):
 # return corpora.Dictionary(jieba.lcut('我们可以'))
 time_before = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
@@ -15,7 +15,7 @@ import jieba.posseg as pseg
 import codecs
 
 # from program import *
-stopwords = codecs.open('./program/stopwords.txt', encoding='UTF-8').read()
+
 def mkdir(path):
     # 引入模块
     import os
@@ -42,24 +42,6 @@ def mkdir(path):
         print path + ' 目录已存在'
         return False
 
-def delstopwords(content):
-    # words = jieba.lcut(content)
-    result = ''
-    # for w in words:
-    #     if w not in stopwords:
-    #         result += w.encode('utf-8')  # +"/"+str(w.flag)+" "  #去停用词
-
-    words = pseg.lcut(content)
-    for word, flag in words:
-        if (word not in stopwords and flag not in ["/x", "/zg", "/uj", "/ul", "/e", "/d", "/uz",
-                                                   "/y"]):  # 去停用词和其他词性，比如非名词动词等
-            result += word.encode('utf-8')  # +"/"+str(w.flag)+" "  #去停用词
-            print result
-    return result
-
-
-# doc = delstopwords('你们觉得天地会的人真心把他当自己人仅仅是因为他滑头？康熙把他当最珍贵的【划去】基【/划去】朋友仅仅是因为他胆子大？')
-# print doc
 if __name__ == '__main__':
     filesaved = 'article.sql'
     docpath = './nnews/'
@@ -67,14 +49,10 @@ if __name__ == '__main__':
     NUM_TOPIC = 300  # 主题的数量，默认为 300
     NUM_DOC = -1  # 所选取的语料集中的文件数量
 
-    # if os.path.exists(docpath):
-    # 	shutil.rmtree(docpath)  # 删除目录
-    # if os.path.exists(lsipath):
-    # 	shutil.rmtree(lsipath)  # 删除目录
     t01 = time.time()
     if os.path.exists(docpath):
         from ar import filebyfileHandle
-        filebyfileHandle(docpath, 100, 4, NUM_DOC)  # 100字符内的文件抛掉不处理,多进程默认 multiprocess=4
+        filebyfileHandle(docpath, 100, multiprocessing.cpu_count(), NUM_DOC)  # 100字符内的文件抛掉不处理,多进程不指定默认 multiprocess=4
     else:
         mkdir(docpath)
     t02 = time.time()

@@ -5,7 +5,7 @@ from gensim import corpora, models, similarities, matutils
 from gensim.models import lsimodel, LsiModel, tfidfmodel
 import jieba.posseg as pseg
 import codecs
-stopwords = codecs.open('stopwords.txt', encoding='UTF-8').read()
+
 import os
 import re
 import sys
@@ -19,6 +19,8 @@ lsitemp = './lsitemp/'
 docpath = './news/'     # text posted one by one, otherwise docpath="./news_add/"
 DECAY_FACTOR = 1.0      # decay factor[0.0, 1.0] for merging two decomposed matrix
 NUM_TOPIC = 300
+
+stopwords = codecs.open('stopwords.txt', encoding='UTF-8').read().split(u'\n')
 
 # functions
 def delstopwords(content):
@@ -81,11 +83,11 @@ def sim_update(results):
 
     # Preporcessing text. Get corpus_add.
     for postfile in results:
-        text_del = delstopwords(stripTags(postfile['text']))
+        deltags = stripTags(postfile['text'])
+        text_del = delstopwords("".join(deltags.split()))
         text_vec = jieba.lcut(text_del)
-        fp = open(docpath + postfile['name'], 'w')
-        fp.write(postfile['text'].encode('utf-8'))
-        fp.close()
+        with open(docpath + postfile['name'], 'w') as fp:
+            fp.write(postfile['text'].encode('utf-8'))
         doc_bow = dictionary.doc2bow(text_vec)
         corpus_add.append(doc_bow)
 
@@ -114,8 +116,8 @@ def sim_update(results):
     index = similarities.docsim.Similarity(lsitemp  + 'viva.index', lsi[corpus], num_features=NUM_TOPIC)
 
     # Save Models
-    lsi.save( lsitemp  + 'viva.lsi')
-    index.save( lsitemp  + 'viva.index')
+    lsi.save(lsitemp + 'viva.lsi')
+    index.save(lsitemp + 'viva.index')
     print("LSI model saved!")
 
     # Print elasped time

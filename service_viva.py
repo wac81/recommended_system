@@ -23,7 +23,7 @@ pkl_file_name = "./prefix_map/filename_map.pkl"
 # @app.before_request
 def appd():
     app.config['stopwords'] = codecs.open(project_path + 'stopwords.txt', encoding='UTF-8').read()
-    # app.config['stopwords'] = open('./stopwords.txt').read()
+
     app.config['dictionary'] = corpora.Dictionary.load(project_path + 'lsi/' + 'viva.dict')
     # baobao changed 4 lines
     # app.config['lsi'] = models.LsiModel.load(project_path + 'lsi/' + 'viva.lsi')
@@ -133,10 +133,10 @@ def check_prefix(file_in):
 
 def similar_search(request):
     doc = request
-    doc = doc.replace(u'\n', '').replace(u'▉', '').replace(u'\t', '').replace(u' ', '')
     doc = stripTags(doc)
+    doc = "".join(doc.split())
     doc = delstopwords(doc)
-    vec_bow = app.config['dictionary'].doc2bow(jieba.lcut(doc))
+    vec_bow = app.config['dictionary'].doc2bow(doc)
     vec_lsi = app.config['lsi'][vec_bow]
 
     # baobao changed
@@ -195,9 +195,11 @@ def delstopwords(content):
     result=''
 
     words = jieba.lcut(content)
+    return_words = []
     for w in words:
         if w not in app.config['stopwords']:
             result += w.encode('utf-8')  # +"/"+str(w.flag)+" "  #去停用词
+            return_words.append(w.encode('utf-8'))
 
     # words = pseg.lcut(content)
     # with app.test_request_context():
@@ -205,7 +207,7 @@ def delstopwords(content):
     #     if (word not in app.config['stopwords'] and flag not in ["/x","/zg","/uj","/ul","/e","/d","/uz","/y"]): #去停用词和其他词性，比如非名词动词等
     #         result += word.encode('utf-8')  # +"/"+str(w.flag)+" "  #去停用词
     #             print result
-    return result
+    return result,return_words
 
 
 def stripTags(s):

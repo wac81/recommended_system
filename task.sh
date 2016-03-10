@@ -1,8 +1,6 @@
 #! /bin/bash
 set -x
 print 'start training......'
-#source /root/.bashrc
-#mv /home/workspace/news /home/workspace/bak/article/news_`date -d now +%Y%m%
 
 
 
@@ -20,9 +18,6 @@ python similarity_run.py > similarity.log
 
 #ps -ef|grep python |grep -v grep | awk '{print $2}'|xargs kill -9
 
-pkill -9 gunicorn
-pkill -9 python
-
 
 #!!!!!!!!!delete news!!!!!!!######
 rm -rf /home/workspace/news
@@ -34,13 +29,23 @@ mv /home/workspace/nnews /home/workspace/news
 mkdir /home/workspace/lsi
 cp /home/workspace/nlsi/* /home/workspace/lsi
 
+
+# remote pkill gunicorn python
+ssh root@10.251.133.225  pkill -9 gunicorn
+ssh root@10.251.133.225  pkill -9 python
+# remote del and cp news & lsi
+ssh root@10.251.133.225 rm -rf /home/workspace/news
+ssh root@10.251.133.225 rm -rf /home/workspace/lsi
+scp -r /home/workspace/news/ root@10.251.133.225:/home/workspace/
+scp -r /home/workspace/lsi/ root@10.251.133.225:/home/workspace/
 #python /home/workspace/service.py &
 
 sleep 1
-#python service_viva.py
-#gunicorn -w4 -t 240 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0
-gunicorn -w4 -t 600 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0 --worker-connections 500
+#gunicorn -w4 -t 600 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0 --worker-connections 500
 
-#ssh root@10.1.1.1 /home/workspace/xx.sh > result.log
-#or
-#ssh root@10.1.1.1 gunicorn -w4 -t 240 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0
+# run getfiles
+python similarity_update_service.py
+
+# remote gunicorn
+ssh root@10.251.133.225 gunicorn -w4 -t 240 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0
+

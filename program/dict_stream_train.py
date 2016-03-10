@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# coding=utf-8
+# -*- coding:utf-8 -*-
 
 import codecs
 import jieba
@@ -12,7 +12,8 @@ import re
 import urllib2
 from multiprocessing.dummy import Pool as ThreadPool
 
-# lsipath = './lsi/'
+
+
 def getFile(docpath='./news/'):
 	count = 0
 	files = os.listdir(docpath)
@@ -21,12 +22,12 @@ def getFile(docpath='./news/'):
 		count += 1
 		print count
 		# print codecs.open(docpath + filename, encoding='UTF-8').read()
-		try:
-			yield codecs.open(docpath + filename).read()
-			print filename
-		except:
-			print filename
-			continue
+		# try:
+		yield codecs.open(docpath + filename).read()
+		print filename
+		# except:
+		# 	print filename
+		# 	continue
 
 # 并行计算
 # def easy_parallize(f, sequence):
@@ -66,9 +67,9 @@ def getFile(docpath='./news/'):
 
 # dictionary= parallel_attribute(some_function)
 def getDictionary(lsipath='./lsi/', docpath='./news/'):
-	stopwords = codecs.open('stopwords.txt', encoding='UTF-8').read()
-	stopwordSet = set(stopwords.split('\r\n'))
-	print('All' + str(len(stopwordSet)) + 'stopwords')
+	# stopwords = codecs.open('stopwords.txt', encoding='UTF-8').read()
+	# stopwordSet = set(stopwords.split('\n'))
+	# print('All' + str(len(stopwordSet)) + 'stopwords')
 
 	dictionary = corpora.Dictionary(jieba.lcut(file) for file in getFile(docpath))
 	# for  file in getFile():
@@ -91,20 +92,20 @@ def getDictionary(lsipath='./lsi/', docpath='./news/'):
 	print '过滤前的字典：'
 	print dictionary
 
-	stop_ids = [dictionary.token2id[stopword]
-	            for stopword in stopwordSet if stopword in dictionary.token2id]
-	print '语料中出现过的停词个数：'
-	print len(stop_ids)
+	# stop_ids = [dictionary.token2id[stopword]
+	#             for stopword in stopwordSet if stopword in dictionary.token2id]
+	# print '语料中出现过的停词个数：'
+	# print len(stop_ids)
 
 	once_ids = [tokenid for tokenid,
 	            docfreq in dictionary.dfs.iteritems() if docfreq == 1]
 	print '全文低频词个数：'
 	print len(once_ids)
 
-	dictionary.filter_tokens(stop_ids + once_ids)
-	dictionary.compactify()
-	print '过滤后的字典：'
-	print(dictionary)
+	# dictionary.filter_tokens(stop_ids + once_ids)
+	# dictionary.compactify()
+	# print '过滤后的字典：'
+	# print(dictionary)
 
 	mkdir(lsipath)
 
