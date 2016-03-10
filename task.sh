@@ -12,6 +12,9 @@ mkdir /home/workspace/nnews
 curl 'http://127.0.0.1:19080/exportArticle'
 
 sleep 1
+# pkill local service:similarity_update_service
+pkill -9 python
+sleep 1
 
 cd /home/workspace
 python similarity_run.py > similarity.log

@@ -11,11 +11,10 @@ print 'start training......'
 
 cd /home/workspace/
 python similarity_update.py > update.log
+
 sleep 1
-
-pkill -9 gunicorn
+# pkill local service:similarity_update_service
 pkill -9 python
-
 sleep 1
 
 #!!!!!!!!!delete news!!!!!!!######
@@ -52,7 +51,7 @@ python similarity_update_service.py
 ssh root@10.251.133.225 cd /home/workspace/
 sleep 1
 #gunicorn -w4 -t 240 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0
-ssh root@10.251.133.225 gunicorn -w4 -t 6000 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0 --worker-connections 500
+ssh root@10.251.133.225 gunicorn -w4 -t 6000 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0
 
 
 
