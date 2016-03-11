@@ -5,7 +5,7 @@ from gensim import corpora, models, similarities, matutils
 from gensim.models import lsimodel, LsiModel, tfidfmodel
 import jieba.posseg as pseg
 import codecs
-
+import shutil
 import os
 import re
 import sys
@@ -31,27 +31,6 @@ def delstopwords(content):
             result += word.encode('utf-8')  # +"/"+str(w.flag)+" "  #去停用词
     return result
 
-def getFile(docpath):
-    count = 0
-    files = os.listdir(docpath)
-    files = sorted(files, key=lambda x: (int(re.sub('\D','',x)),x))
-    for filename in files:
-        count += 1
-        print count
-        yield codecs.open(os.path.join(docpath ,filename)).read()
-        print filename
-
-def getFiles(docpath):
-    count = 0
-    files = os.listdir(docpath)
-    files = sorted(files, key=lambda x: (int(re.sub('\D','',x)),x))
-    arr = []
-    for filename in files:
-        count += 1
-        print count
-        arr.append(jieba.lcut(codecs.open(os.path.join(docpath ,filename)).read()))
-        print filename
-    return arr
 
 def sim_update(results):
     """
@@ -81,15 +60,28 @@ def sim_update(results):
     lsi = lsimodel.LsiModel.load(lsipath  + 'viva.lsi')     # 将 mm 文件中的 corpus 映射到 LSI 空间当中
     corpus_add = []
 
+    news_post_add = "./news_post_add/"
+    if not os.path.exists(news_post_add):
+        os.mkdir(file_path)
     # Preporcessing text. Get corpus_add.
     for postfile in results:
         deltags = stripTags(postfile['text'])
         text_del = delstopwords("".join(deltags.split()))
         text_vec = jieba.lcut(text_del)
-        with open(docpath + postfile['name'], 'w') as fp:
-            fp.write(postfile['text'].encode('utf-8'))
+        # with open(docpath + postfile['name'], 'w') as fp:
+        #     fp.write(postfile['text'].encode('utf-8'))
         doc_bow = dictionary.doc2bow(text_vec)
         corpus_add.append(doc_bow)
+
+        #del and
+        with open(news_post_add + postfile['name'], 'w') as fp:
+            fp.write(postfile['text'].encode('utf-8'))
+
+    files = os.listdir(news_post_add)
+    for i in files:
+        shutil.copy(news_post_add + i, docpath)
+
+
 
     # Get TF-IDF vecters of documents
     tfidf = tfidfmodel.TfidfModel(corpus_raw)
@@ -277,6 +269,9 @@ if __name__=='__main__':
         text = t_fp.read()
         t_fp.close()
         result.append({'name': file_name.decode('utf-8'), 'text': text.decode('utf-8')})
+
+
+    shutil.rmtree(file_path)
 
     sim_update(result)
 

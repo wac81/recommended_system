@@ -31,13 +31,17 @@ cp /home/workspace/lsitemp/* /home/workspace/lsi/
 # A machine
 # copy lsi model to all machines
 # remote pkill gunicorn python
-ssh root@10.251.133.225  pkill -9 gunicorn
-ssh root@10.251.133.225  pkill -9 python
-# remote del and cp news & lsi
-ssh root@10.251.133.225 rm -rf /home/workspace/news
-ssh root@10.251.133.225 rm -rf /home/workspace/lsi
-scp -r /home/workspace/news/ root@10.251.133.225:/home/workspace/
+ssh root@10.251.133.225  "pkill -9 gunicorn"
+ssh root@10.251.133.225  "pkill -9 python"
+
+# remote  cp added news & cp lsi
+#ssh root@10.251.133.225 "rm -rf /home/workspace/news"
+ssh root@10.251.133.225 "rm -rf /home/workspace/lsi"
+ssh root@10.251.133.225 "rm -rf /home/workspace/nlsi"
+scp -r /home/workspace/news_post_add/ root@10.251.133.225:/home/workspace/news/
 scp -r /home/workspace/lsi/ root@10.251.133.225:/home/workspace/
+scp -r /home/workspace/nlsi/ root@10.251.133.225:/home/workspace/
+
 # cp file map
 ssh root@10.251.133.225 rm -rf /home/workspace/prefix_map/
 scp -r /home/workspace/prefix_map/ root@10.251.133.225:/home/workspace/
@@ -45,13 +49,12 @@ scp -r /home/workspace/prefix_map/ root@10.251.133.225:/home/workspace/
 #scp /home/workspace/lsitemp/* root@10.144.141.135:/home/workspace/lsi
 
 # run getfiles
-python similarity_update_service.py
+nohup python similarity_update_service.py > service.log &
 
 # run remote similar find
-ssh root@10.251.133.225 cd /home/workspace/
 sleep 1
 #gunicorn -w4 -t 240 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0
-ssh root@10.251.133.225 gunicorn -w4 -t 6000 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0
+ssh root@10.251.133.225 "sh /home/workspace/gunicorn.sh"
 
 
 

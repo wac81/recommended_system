@@ -126,11 +126,11 @@ def dealwith_mulitpocess(file):
         #     content = content + line
         # print content
         # content = re.sub(p, '', content)
-        if len(content) > rejectOfDocSize:
-            content = stripTags(content)
-            content = "".join(content.split())
-            content = delNOTNeedWords(content,stopwords)
 
+        content = stripTags(content)
+        content = "".join(content.split())
+        if len(content) > rejectOfDocSize:
+            content = delNOTNeedWords(content,stopwords)
             with open(filepath,'w') as fp:
                 # fp.truncate(0)
                 # position = fp.seek(0, 0);
@@ -138,3 +138,6 @@ def dealwith_mulitpocess(file):
                 # fp.close()
                 # x = x + 1
                 print filepath
+        else:
+            # 文件大小小于特定值就删除文件，不进入模型
+            os.remove(filepath)

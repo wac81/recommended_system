@@ -6,9 +6,10 @@ print 'start training......'
 
 #!!!!!!!!!delete new news!!!!!!!######
 rm -rf /home/workspace/nnews
+rm -rf /home/workspace/nlsi
 
 mkdir /home/workspace/nnews
-#curl 'http://127.0.0.1:19080/exportArticle?number=1000'
+#curl 'http://127.0.0.1:19080/exportArticle?number=100'
 curl 'http://127.0.0.1:19080/exportArticle'
 
 sleep 1
@@ -34,21 +35,27 @@ cp /home/workspace/nlsi/* /home/workspace/lsi
 
 
 # remote pkill gunicorn python
-ssh root@10.251.133.225  pkill -9 gunicorn
-ssh root@10.251.133.225  pkill -9 python
+ssh root@10.251.133.225  "pkill -9 gunicorn"
+ssh root@10.251.133.225  "pkill -9 python"
 # remote del and cp news & lsi
-ssh root@10.251.133.225 rm -rf /home/workspace/news
-ssh root@10.251.133.225 rm -rf /home/workspace/lsi
+ssh root@10.251.133.225 "rm -rf /home/workspace/news"
+ssh root@10.251.133.225 "rm -rf /home/workspace/lsi"
+ssh root@10.251.133.225 "rm -rf /home/workspace/nlsi"
 scp -r /home/workspace/news/ root@10.251.133.225:/home/workspace/
 scp -r /home/workspace/lsi/ root@10.251.133.225:/home/workspace/
+scp -r /home/workspace/nlsi/ root@10.251.133.225:/home/workspace/
 #python /home/workspace/service.py &
 
 sleep 1
 #gunicorn -w4 -t 600 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0 --worker-connections 500
 
 # run getfiles
-python similarity_update_service.py
+nohup python similarity_update_service.py > service.log &
 
+sleep 1
 # remote gunicorn
-ssh root@10.251.133.225 gunicorn -w4 -t 240 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0
+# run remote similar find
+#ssh root@10.251.133.225 "cd /home/workspace/"
+#ssh root@10.251.133.225 "gunicorn -w4 -t 240 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0"
+ssh root@10.251.133.225 "sh /home/workspace/gunicorn.sh"
 
