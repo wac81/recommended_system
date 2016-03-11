@@ -135,7 +135,7 @@ def similar_search(request):
     doc = request
     doc = stripTags(doc)
     doc = "".join(doc.split())
-    doc = delstopwords(doc)
+    doc = delstopwords(doc)[1]
     vec_bow = app.config['dictionary'].doc2bow(doc)
     vec_lsi = app.config['lsi'][vec_bow]
 
