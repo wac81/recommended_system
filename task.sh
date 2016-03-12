@@ -9,8 +9,8 @@ rm -rf /home/workspace/nnews
 rm -rf /home/workspace/nlsi
 
 mkdir /home/workspace/nnews
-curl 'http://127.0.0.1:19080/exportArticle?number=20'
-#curl 'http://127.0.0.1:19080/exportArticle'
+#curl 'http://127.0.0.1:19080/exportArticle?number=20'
+curl 'http://127.0.0.1:19080/exportArticle'
 
 sleep 1
 # pkill local service:similarity_update_service

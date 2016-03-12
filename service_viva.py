@@ -231,6 +231,6 @@ def stripTags(s):
 if __name__ == '__main__':
     with app.app_context():
         print current_app.name
-    app.run(debug=False, host='0.0.0.0', port=3000)
+    app.run(debug=False, host='0.0.0.0', port=3001)
 
 
