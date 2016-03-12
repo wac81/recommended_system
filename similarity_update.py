@@ -15,7 +15,7 @@ sys.path.append("./program/")
 
 # constants
 lsipath = './lsi/'
-lsitemp = './lsitemp/'
+# lsitemp = './lsitemp/'
 docpath = './news/'     # text posted one by one, otherwise docpath="./news_add/"
 DECAY_FACTOR = 1.0      # decay factor[0.0, 1.0] for merging two decomposed matrix
 NUM_TOPIC = 300
@@ -91,25 +91,25 @@ def sim_update(results):
     lsi.add_documents(corpus_tfidf, decay=DECAY_FACTOR)
 
     # Updated Corpus
-    if not os.path.exists(lsitemp):
-        os.mkdir(lsitemp)
-    corpora.MmCorpus.serialize(lsitemp + 'viva_temp.mm', itertools.chain(corpus_raw, corpus_add))
-    fp = open(lsitemp + 'viva_temp.mm', 'rb')
-    textfile = fp.read()
-    fp.close()
-    fp = open(lsitemp + 'viva.mm', 'wb')
-    fp.write(textfile)
-    fp.close()
-    corpus = corpora.MmCorpus(lsitemp + 'viva_temp.mm')
+    if not os.path.exists(lsipath):
+        os.mkdir(lsipath)
+    corpora.MmCorpus.serialize(lsipath + 'viva.mm', itertools.chain(corpus_raw, corpus_add))
+    # fp = open(lsitemp + 'viva_temp.mm', 'rb')
+    # textfile = fp.read()
+    # fp.close()
+    # fp = open(lsitemp + 'viva.mm', 'wb')
+    # fp.write(textfile)
+    # fp.close()
+    corpus = corpora.MmCorpus(lsipath + 'viva.mm')
 
     # Updated LSI Index
     # index = similarities.docsim.Similarity.load(lsipath + 'viva.index')
     # index.add_documents(lsi[corpus_tfidf])
-    index = similarities.docsim.Similarity(lsitemp  + 'viva.index', lsi[corpus], num_features=NUM_TOPIC)
+    index = similarities.docsim.Similarity(lsipath + 'viva.index', lsi[corpus], num_features=NUM_TOPIC)
 
     # Save Models
-    lsi.save(lsitemp + 'viva.lsi')
-    index.save(lsitemp + 'viva.index')
+    lsi.save(lsipath + 'viva.lsi')
+    index.save(lsipath + 'viva.index')
     print("LSI model saved!")
 
     # Print elasped time
