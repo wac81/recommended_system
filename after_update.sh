@@ -13,7 +13,7 @@ pkill -9 gunicorn
 pkill -9 python
 sleep 1
 
-gunicorn -w4 -t 600 -k gevent -b0.0.0.0:3001 service_viva:app --preload --limit-request-line 0
+nohup gunicorn -w4 -t 600 -k gevent -b0.0.0.0:3001 service_viva:app --preload --limit-request-line 0 &
 
 # A machine
 # copy lsi model to all machines
