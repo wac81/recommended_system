@@ -34,6 +34,7 @@ mv /home/workspace/nnews /home/workspace/news
 mkdir /home/workspace/lsi
 cp /home/workspace/nlsi/* /home/workspace/lsi
 
+gunicorn -w4 -t 600 -k gevent -b0.0.0.0:3001 service_viva:app --preload --limit-request-line 0
 
 # remote pkill gunicorn python
 ssh ${A}  "pkill -9 gunicorn"
