@@ -48,11 +48,14 @@ if __name__ == '__main__':
     lsipath = './nlsi/'
     NUM_TOPIC = 300  # 主题的数量，默认为 300
     NUM_DOC = -1  # 所选取的语料集中的文件数量
-
+    cpu_num = multiprocessing.cpu_count()
+    doc_limit = 100
     t01 = time.time()
+    print "cpu_num="+str(cpu_num)
+    print "doc_limit="+str(doc_limit)
     if os.path.exists(docpath):
         from ar import filebyfileHandle
-        filebyfileHandle(docpath, 100, multiprocessing.cpu_count(), NUM_DOC)  # 100字符内的文件抛掉不处理,多进程不指定默认 multiprocess=4
+        filebyfileHandle(docpath, doc_limit, cpu_num, NUM_DOC)  # 100字符内的文件抛掉不处理,多进程不指定默认 multiprocess=4
     else:
         mkdir(docpath)
     t02 = time.time()
