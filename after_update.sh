@@ -38,6 +38,6 @@ nohup python similarity_update_service.py > update_service.log &
 sleep 1
 #gunicorn -w4 -t 600 -k gevent -b0.0.0.0:3000 service_viva:app --preload --limit-request-line 0
 ssh ${A} "sh /home/workspace/gunicorn.sh"
-
+exit
 
 
