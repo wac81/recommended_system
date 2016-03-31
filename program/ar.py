@@ -119,29 +119,51 @@ def dealwith_mulitpocess(file):
     global filesPath
     filepath = os.path.join(filesPath,file)
     if not os.path.isdir(filepath):
-        content = None
-        with open(filepath, 'r') as fp:  #r+是读写
-            content = fp.read()
+        # content = None
+        # with open(filepath, 'r') as fp:  #r+是读写
+        #     content = fp.read()
+        #
+        # content = stripTags(content)
+        # content = "".join(content.split())
+        #
+        # if len(content) > rejectOfDocSize:
+        #     content = delNOTNeedWords(content,stopwords)
+        #     with open(filepath,'w') as fp:
+        #         fp.write(content)
+        #         print filepath
+        # else:
+        #     # 文件大小小于特定值就删除文件，不进入模型
+        #     os.remove(filepath)
 
-        # for line in fp:
-        #     content = content + line
-        # print content
-        # content = re.sub(p, '', content)
 
+        #truncate  delete file mode  faster 5%
+        fp = open(filepath, 'r+') #r+是读写
+        content = fp.read()
         content = stripTags(content)
         content = "".join(content.split())
 
         if len(content) > rejectOfDocSize:
             content = delNOTNeedWords(content,stopwords)
-
-            with open(filepath,'w') as fp:
-                # fp.truncate(0)
-                # position = fp.seek(0, 0);
-                fp.write(content)
-                # fp.close()
-                # x = x + 1
-                print filepath
+            fp.truncate()
+            position = fp.seek(0, 0);
+            fp.write(content)
+            fp.close()
+            # x = x + 1
+            print filepath
         else:
-
+            fp.close()
             # 文件大小小于特定值就删除文件，不进入模型
             os.remove(filepath)
+
+if __name__ == '__main__':
+    import multiprocessing
+    import time
+    docpath = '/home/wac/PycharmProjects/recommended_system/nnews/'
+
+    NUM_DOC = -1  # 所选取的语料集中的文件数量
+    cpu_num = multiprocessing.cpu_count()
+    doc_limit = 100
+    t31 = time.time()
+    filebyfileHandle(docpath, doc_limit, cpu_num, NUM_DOC)  # 100字符内的文件抛掉不处理,多进程不指定默认 multiprocess=4
+    t32 = time.time()
+    print "filebyfileHandle time = ", t32 - t31

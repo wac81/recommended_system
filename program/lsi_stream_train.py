@@ -55,7 +55,7 @@ def getLsiModel(lsipath='./lsi/', num_topics=300):
 
     lsi.save(lsipath  + 'viva.lsi')
     print('lsi模型保存完毕')
-    return  lsi
+    return lsi
 
 if __name__ == '__main__':
     NUM_TOPIC = 300  # 主题的数量，默认为 300

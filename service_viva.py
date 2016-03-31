@@ -65,7 +65,7 @@ def index():
     return '相似度推荐 for viva，GET方式：请访问/similar/[传入字串] \n POST方式：请访问/similar/post  post体里text=[传入字串]'
 
 # baobao add whole function
-@app.route('/getfiles/<input_text>',methods=['GET', 'POST'])
+#@app.route('/getfiles/<input_text>',methods=['GET', 'POST'])
 def getfiles(input_text):
     re=object
     if request.method == 'POST':
@@ -127,7 +127,7 @@ def check_prefix(file_in):
         print("From dict %s" % file_a)
         return filesd[file_a]
     else:
-        print("From news %s" % file_in)
+        # print("From news %s" % file_in)
         return file_in
 
 
