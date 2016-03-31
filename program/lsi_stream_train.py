@@ -10,6 +10,7 @@ from pprint import pprint
 import sys
 import os
 import logging
+import time
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 # lsipath = './lsi/'
 # articleDir = './a/'
@@ -37,15 +38,26 @@ def getLsiModel(lsipath='./lsi/', num_topics=300):
     # 语料库
     corpus = corpora.MmCorpus(lsipath +'viva.mm')
     print ('mm load')
+
+    t31 = time.time()
+
     # tfidf
     tfidf = models.TfidfModel(corpus)
     corpus_tfidf = tfidf[corpus]
+    t32 = time.time()
+    print "tfidf_corpus time = ", t32 - t31
 
     # baobao change 3 lines
     # corpus = MyCorpus()
     # lsi = models.LsiModel(corpus, id2word=dictionary, num_topics=500,power_iters=2,chunksize=50000,onepass=True,distributed=False)
-    lsi = lsimodel.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=num_topics,chunksize=20000)
+    # lsi = lsimodel.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=num_topics,chunksize=20000)
+    lsi = lsimodel.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=NUM_TOPIC,power_iters=2,chunksize=50000,onepass=True,distributed=False)
 
-    lsi.save( lsipath  + 'viva.lsi')
+    lsi.save(lsipath  + 'viva.lsi')
     print('lsi模型保存完毕')
     return  lsi
+
+if __name__ == '__main__':
+    NUM_TOPIC = 300  # 主题的数量，默认为 300
+    lsipath = '../nlsi/'
+    lsimodel = getLsiModel(lsipath=lsipath, num_topics=NUM_TOPIC)

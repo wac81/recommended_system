@@ -19,7 +19,7 @@ lsipath = './lsi/'
 docpath = './news/'     # text posted one by one, otherwise docpath="./news_add/"
 DECAY_FACTOR = 1.0      # decay factor[0.0, 1.0] for merging two decomposed matrix
 NUM_TOPIC = 300
-
+chunksize = 50000
 stopwords = codecs.open('stopwords.txt', encoding='UTF-8').read().split(u'\n')
 
 # functions
@@ -88,7 +88,8 @@ def sim_update(results):
     corpus_tfidf = tfidf[corpus_add]
 
     # Updated LSI Model
-    lsi.add_documents(corpus_tfidf, decay=DECAY_FACTOR)
+
+    lsi.add_documents(corpus_tfidf, chunksize=chunksize, decay=DECAY_FACTOR)
 
     # Updated Corpus
     if not os.path.exists(lsipath):

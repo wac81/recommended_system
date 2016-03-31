@@ -5,7 +5,7 @@ import re
 import jieba
 import codecs
 import jieba.posseg as pseg
-
+from multiprocessing import Pool as ThreadPool
 filesPath='./news/'
 rejectOfDocSize=400
 x = 0
@@ -104,7 +104,7 @@ def filebyfileHandle(fileSavedPath='./news/',rejectOfDocSize=400,multiprocess=4,
     if(number_doc==-1 or number_doc > len(list)):
         number_doc = len(list)
     list = sorted(list[:number_doc], key=lambda x: (int(re.sub('\D','',x)),x))
-    from multiprocessing import Pool as ThreadPool
+
     pool = ThreadPool(multiprocess)
     # try:
     dictionary = pool.map(dealwith_mulitpocess, list)
@@ -119,8 +119,9 @@ def dealwith_mulitpocess(file):
     global filesPath
     filepath = os.path.join(filesPath,file)
     if not os.path.isdir(filepath):
-        fp = open(filepath, 'r+')
-        content=fp.read()
+        content = None
+        with open(filepath, 'r') as fp:  #r+是读写
+            content = fp.read()
 
         # for line in fp:
         #     content = content + line
@@ -129,8 +130,10 @@ def dealwith_mulitpocess(file):
 
         content = stripTags(content)
         content = "".join(content.split())
+
         if len(content) > rejectOfDocSize:
             content = delNOTNeedWords(content,stopwords)
+
             with open(filepath,'w') as fp:
                 # fp.truncate(0)
                 # position = fp.seek(0, 0);
@@ -139,5 +142,6 @@ def dealwith_mulitpocess(file):
                 # x = x + 1
                 print filepath
         else:
+
             # 文件大小小于特定值就删除文件，不进入模型
             os.remove(filepath)

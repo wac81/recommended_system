@@ -60,23 +60,28 @@ if __name__ == '__main__':
         mkdir(docpath)
     t02 = time.time()
 
+    print "prepare time = ", t02 - t01
+
     t11 = time.time()
     from dict_stream_train import getDictionary
 
     dict = getDictionary(lsipath=lsipath, docpath=docpath)
     t12 = time.time()
+    print "dict time = ", t12 - t11
 
     t21 = time.time()
     from corpus_stream_train import getCorpus
 
     corpus = getCorpus(lsipath=lsipath, docpath=docpath)
     t22 = time.time()
+    print "corpus time = ", t22 - t21
 
     t31 = time.time()
     from lsi_stream_train import getLsiModel
 
     lsimodel = getLsiModel(lsipath=lsipath, num_topics=NUM_TOPIC)
     t32 = time.time()
+    print "lsimodel time = ", t32 - t31
 
     t41 = time.time()
     from index_stream_train import getIndex
