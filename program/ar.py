@@ -103,7 +103,7 @@ def filebyfileHandle(fileSavedPath='./news/',rejectOfDocSize=400,multiprocess=4,
 
     if(number_doc==-1 or number_doc > len(list)):
         number_doc = len(list)
-    list = sorted(list[:number_doc], key=lambda x: (int(re.sub('\D','',x)),x))
+    # list = sorted(list[:number_doc], key=lambda x: (int(re.sub('\D','',x)),x))
 
     pool = ThreadPool(multiprocess)
     # try:
