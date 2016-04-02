@@ -9,7 +9,7 @@ rm -rf /home/workspace/nnews
 rm -rf /home/workspace/nlsi
 
 mkdir /home/workspace/nnews
-#curl 'http://127.0.0.1:19080/exportArticle?number=50'
+#curl 'http://127.0.0.1:19080/exportArticle?number=2000'
 curl 'http://127.0.0.1:19080/exportArticle'
 
 sleep 1

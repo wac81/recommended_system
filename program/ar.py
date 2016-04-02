@@ -144,7 +144,7 @@ def dealwith_mulitpocess(file):
 
         if len(content) > rejectOfDocSize:
             content = delNOTNeedWords(content,stopwords)
-            fp.truncate()
+            fp.truncate(0)
             position = fp.seek(0, 0);
             fp.write(content)
             fp.close()
@@ -164,6 +164,14 @@ if __name__ == '__main__':
     cpu_num = multiprocessing.cpu_count()
     doc_limit = 100
     t31 = time.time()
-    filebyfileHandle(docpath, doc_limit, cpu_num, NUM_DOC)  # 100字符内的文件抛掉不处理,多进程不指定默认 multiprocess=4
+    # filebyfileHandle(docpath, doc_limit, cpu_num, NUM_DOC)  # 100字符内的文件抛掉不处理,多进程不指定默认 multiprocess=4
     t32 = time.time()
     print "filebyfileHandle time = ", t32 - t31
+
+
+    fp = open('s', 'r+') #r+是读写
+    content = fp.read()
+    content = stripTags(content)
+    content = "".join(content.split())
+    # content = delNOTNeedWords(content,stopwords)
+    print content
