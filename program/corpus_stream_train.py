@@ -83,7 +83,7 @@ def getCorpus(lsipath='./lsi/', docpath='./news/'):
     corpus = MyCorpus(dictionary, docpath)
     corpora.MmCorpus.serialize(lsipath + 'viva.mm', corpus)
     print('Corpus Saved')
-    return  corpus
+    return corpus
 
 
 class MyCorpus(object):

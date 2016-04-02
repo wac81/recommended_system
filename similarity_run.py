@@ -43,6 +43,8 @@ def mkdir(path):
         return False
 
 if __name__ == '__main__':
+    import gc
+
     filesaved = 'article.sql'
     docpath = './nnews/'
     lsipath = './nlsi/'
@@ -75,6 +77,11 @@ if __name__ == '__main__':
     corpus = getCorpus(lsipath=lsipath, docpath=docpath)
     t22 = time.time()
     print "corpus time = ", t22 - t21
+
+
+    #gc
+    del dict, corpus
+    gc.collect()
 
     t31 = time.time()
     from lsi_stream_train import getLsiModel

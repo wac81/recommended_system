@@ -11,7 +11,7 @@ import sys
 import os
 import logging
 import time
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+logging.basicConfig(filename='../lsi_train.log', format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 # lsipath = './lsi/'
 # articleDir = './a/'
 # project_path = './'
