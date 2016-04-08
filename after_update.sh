@@ -32,7 +32,7 @@ ssh ${A} "rm -rf /home/workspace/prefix_map/"
 scp -r /home/workspace/prefix_map/ ${A}:/home/workspace/
 
 # run getfiles
-nohup python similarity_update_service.py > update_service.log &
+nohup python similarity_update_service.pyc > update_service.log &
 
 # run remote similar find
 sleep 1
