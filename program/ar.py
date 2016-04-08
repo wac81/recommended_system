@@ -9,6 +9,10 @@ from multiprocessing import Pool as ThreadPool
 filesPath='./news/'
 rejectOfDocSize=400
 x = 0
+# jieba.enable_parallel(8)
+# time_count = 0
+
+
 def stripTags(s):
     ''' Strips HTML tags.
         Taken from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/440481
@@ -73,87 +77,91 @@ def delNOTNeedWords(content,stopwords):
     #         result += w.encode('utf-8')  # +"/"+str(w.flag)+" "  #去停用词
 
     words = pseg.lcut(content)
-
+    # jieba.cut()
+    text_list = []
     for word, flag in words:
         # print word.encode('utf-8')
         if (word not in stopwords and flag not in ["/x","/zg","/uj","/ul","/e","/d","/uz","/y"]): #去停用词和其他词性，比如非名词动词等
+            # text_list.append(word.encode('utf-8'))
             result += word.encode('utf-8')  # +"/"+str(w.flag)+" "  #去停用词
+        # ''.join(text_list)
     return result
+    # return ''.join(text_list)
 
 def filebyfileHandleSingleProcess(SavedPath='./news/',rejectOfDocSize=400):
     # mkdir(fileSavedPath)
     # fp = open(fileSavedPath, 'r')
     x = 0
-    global fileSavedPath
-    fileSavedPath=SavedPath
-    list = os.listdir(fileSavedPath)
-    list = sorted(list, key=lambda x: (int(re.sub('\D','',x)),x))
+    global filesPath
+    filesPath=SavedPath
+    list = os.listdir(filesPath)
+    # list = sorted(list, key=lambda x: (int(re.sub('\D','',x)),x))
     for l in list:
         dealwith_mulitpocess(l)
 
 
 def filebyfileHandle(fileSavedPath='./news/',rejectOfDocSize=400,multiprocess=4,number_doc=-1):
-    # mkdir(fileSavedPath)
-    # fp = open(fileSavedPath, 'r')
     x = 0
     global filesPath
     filesPath = fileSavedPath
-    rejectOfDocSize=rejectOfDocSize
     list = os.listdir(fileSavedPath)
 
-    if(number_doc==-1 or number_doc > len(list)):
+    if number_doc == -1 or number_doc > len(list):
         number_doc = len(list)
     # list = sorted(list[:number_doc], key=lambda x: (int(re.sub('\D','',x)),x))
 
     pool = ThreadPool(multiprocess)
-    # try:
     dictionary = pool.map(dealwith_mulitpocess, list)
-    # except Exception as e:
-    #     print e
-    #     pass
     pool.close()
     pool.join()
 
 
 def dealwith_mulitpocess(file):
     global filesPath
+    # global time_count
     filepath = os.path.join(filesPath,file)
     if not os.path.isdir(filepath):
-        # content = None
-        # with open(filepath, 'r') as fp:  #r+是读写
-        #     content = fp.read()
-        #
+        content = None
+        with open(filepath, 'r') as fp:  #r+是读写
+            content = fp.read()
+
+        content = stripTags(content)
+        content = "".join(content.split())
+
+        if len(content) > rejectOfDocSize:
+            # t1 = time.time()
+            content = delNOTNeedWords(content, stopwords)
+            # t2 = time.time()
+            # t21 = t2 - t1
+            # time_count = time_count + t21
+            # print time_count
+            with open(filepath, 'w') as fp:
+                fp.write(content)
+
+            print filepath
+        else:
+            # 文件大小小于特定值就删除文件，不进入模型
+            os.remove(filepath)
+
+
+        #truncate  delete file mode  faster 5%
+        # fp = open(filepath, 'r+') #r+是读写
+        # content = fp.read()
         # content = stripTags(content)
         # content = "".join(content.split())
         #
         # if len(content) > rejectOfDocSize:
         #     content = delNOTNeedWords(content,stopwords)
-        #     with open(filepath,'w') as fp:
-        #         fp.write(content)
-        #         print filepath
+        #     fp.truncate(0)
+        #     position = fp.seek(0, 0);
+        #     fp.write(content)
+        #     fp.close()
+        #     # x = x + 1
+        #     print filepath
         # else:
+        #     fp.close()
         #     # 文件大小小于特定值就删除文件，不进入模型
         #     os.remove(filepath)
-
-
-        #truncate  delete file mode  faster 5%
-        fp = open(filepath, 'r+') #r+是读写
-        content = fp.read()
-        content = stripTags(content)
-        content = "".join(content.split())
-
-        if len(content) > rejectOfDocSize:
-            content = delNOTNeedWords(content,stopwords)
-            fp.truncate(0)
-            position = fp.seek(0, 0);
-            fp.write(content)
-            fp.close()
-            # x = x + 1
-            print filepath
-        else:
-            fp.close()
-            # 文件大小小于特定值就删除文件，不进入模型
-            os.remove(filepath)
 
 if __name__ == '__main__':
     import multiprocessing
@@ -164,14 +172,15 @@ if __name__ == '__main__':
     cpu_num = multiprocessing.cpu_count()
     doc_limit = 100
     t31 = time.time()
-    # filebyfileHandle(docpath, doc_limit, cpu_num, NUM_DOC)  # 100字符内的文件抛掉不处理,多进程不指定默认 multiprocess=4
+    # filebyfileHandleSingleProcess(docpath,doc_limit)
+    filebyfileHandle(docpath, doc_limit, cpu_num, NUM_DOC)  # 100字符内的文件抛掉不处理,多进程不指定默认 multiprocess=4
     t32 = time.time()
     print "filebyfileHandle time = ", t32 - t31
 
 
-    fp = open('s', 'r+') #r+是读写
-    content = fp.read()
-    content = stripTags(content)
-    content = "".join(content.split())
+    # fp = open('s', 'r+') #r+是读写
+    # content = fp.read()
+    # content = stripTags(content)
+    # content = "".join(content.split())
     # content = delNOTNeedWords(content,stopwords)
-    print content
+    # print content

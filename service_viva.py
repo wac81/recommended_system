@@ -124,7 +124,7 @@ def check_prefix(file_in):
 
 
     if file_a in filesd.keys():
-        print("From dict %s" % file_a)
+        # print("From dict %s" % file_a)
         return filesd[file_a]
     else:
         # print("From news %s" % file_in)

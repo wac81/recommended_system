@@ -3,6 +3,7 @@ import logging
 import json
 import os
 from flask import Flask, request, abort,g,current_app
+import subprocess
 
 #logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -38,11 +39,12 @@ def getfiles(input_text):
     #     from similarity_update import sim_update
     #     sim_update(result)
     print("Run the shell.")
-    os.system('./after_update.sh')
+    process = subprocess.Popen(['./after_update.sh'])
+    # os.system('./after_update.sh')
     # os.system('sh ../cms/task.sh')
     print("Shell done!")
     print result
-    return result
+    return "It's OK!"
 
 if __name__ == '__main__':
     with app.app_context():
