@@ -5,7 +5,7 @@ echo 'start updating......'
 A="root@10.251.133.225"
 
 cd /home/workspace/
-python similarity_update.py > update.log
+python similarity_update.pyc > update.log
 
 sleep 1
 # pkill local service:similarity_update_service
