@@ -164,6 +164,7 @@ def similar_search(request):
         # print ss[i]
         # print ss[i][0]
         # print files[299]
+        print ss[i][0]
         fileid=files[ss[i][0]]
 
         # baobao add 1 line
