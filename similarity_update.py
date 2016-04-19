@@ -15,10 +15,10 @@ import itertools
 sys.path.append("./program/")
 
 # constants
-lsipath = './lsi/'
-lsitemp = './lsitemp/'
-docpath = './news/'  # text posted one by one, otherwise docpath="./news_add/"
-news_post_add = "./news_post_add/"
+lsipath = '/home/workspace/lsi/'
+lsitemp = '/home/workspace/lsitemp/'
+docpath = '/home/workspace/news/'  # text posted one by one, otherwise docpath="./news_add/"
+news_post_add = "/home/workspace/news_post_add/"
 DECAY_FACTOR = 0.999  # decay factor[0.0, 1.0] for merging two decomposed matrix
 NUM_TOPIC = 300
 chunksize = 60000
@@ -43,7 +43,7 @@ def sim_update(results):
     :return:
     """
 
-    shutil.rmtree(lsitemp,ignore_errors=False)
+    shutil.rmtree(lsitemp,ignore_errors=True)
     mkdir(lsitemp)
 
 
@@ -136,7 +136,7 @@ def prefix_map(result_in):
     """
     import cPickle
     import os
-    mapdir = "./prefix_map/"
+    mapdir = "/home/workspace/prefix_map/"
     mkdir(mapdir)
     pkl_file_name = mapdir + "filename_map.pkl"
     if os.path.isfile(pkl_file_name):
@@ -148,7 +148,7 @@ def prefix_map(result_in):
         name_dict = {}
 
     # Get max prefix value
-    files = os.listdir("./news/")
+    files = os.listdir("/home/workspace/news/")
     files_order = sorted(files, key=lambda x: (int(re.search(r'([0-9]+)(_)', x).group(1)), x))
     max_prefix = int(re.search(r'([0-9]+)(_)', files_order[-1]).group(1)) + 1
     result_out = []
