@@ -11,23 +11,27 @@ import re
 import sys
 import time
 import itertools
+
 sys.path.append("./program/")
 
 # constants
 lsipath = './lsi/'
-# lsitemp = './lsitemp/'
-docpath = './news/'     # text posted one by one, otherwise docpath="./news_add/"
-DECAY_FACTOR = 1.0      # decay factor[0.0, 1.0] for merging two decomposed matrix
+lsitemp = './lsitemp/'
+docpath = './news/'  # text posted one by one, otherwise docpath="./news_add/"
+news_post_add = "./news_post_add/"
+DECAY_FACTOR = 0.999  # decay factor[0.0, 1.0] for merging two decomposed matrix
 NUM_TOPIC = 300
-chunksize = 20000
+chunksize = 60000
 stopwords = codecs.open('stopwords.txt', encoding='UTF-8').read().split(u'\n')
+
 
 # functions
 def delstopwords(content):
-    result=''
+    result = ''
     words = pseg.lcut("".join(content.split()))
     for word, flag in words:
-        if word not in stopwords and flag not in ["/x","/zg","/uj","/ul","/e","/d","/uz","/y"]: #去停用词和其他词性，比如非名词动词等
+        if word not in stopwords and flag not in ["/x", "/zg", "/uj", "/ul", "/e", "/d", "/uz",
+                                                  "/y"]:  # 去停用词和其他词性，比如非名词动词等
             result += word.encode('utf-8')  # +"/"+str(w.flag)+" "  #去停用词
     return result
 
@@ -38,13 +42,17 @@ def sim_update(results):
     :param results:
     :return:
     """
+
+    shutil.rmtree(lsitemp,ignore_errors=False)
+    mkdir(lsitemp)
+
+
     t_total_begin = time.time()
 
-    print("Checking repeat ...")
+    # print("Checking repeat ...")
     # results_temp = check_repet_new(results)
     results_temp = results
-    print("Check repeat complete!")
-    del results
+    # print("Check repeat complete!")
     print("Prefix mapping ...")
     results = prefix_map(results_temp)
     print("Prefix map complete!")
@@ -54,122 +62,70 @@ def sim_update(results):
 
     # Extended Dictionary
     dictionary = corpora.Dictionary.load(lsipath + 'viva.dict')
-
     # Load Models
     corpus_raw = corpora.MmCorpus(lsipath + 'viva.mm')
-    lsi = lsimodel.LsiModel.load(lsipath  + 'viva.lsi')     # 将 mm 文件中的 corpus 映射到 LSI 空间当中
-    corpus_add = []
+    lsi = lsimodel.LsiModel.load(lsipath + 'viva.lsi')  # 将 mm 文件中的 corpus 映射到 LSI 空间当中
 
-    news_post_add = "./news_post_add/"
-    if not os.path.exists(news_post_add):
-        os.mkdir(file_path)
+    mkdir(news_post_add)
+
     # Preporcessing text. Get corpus_add.
     for postfile in results:
         deltags = stripTags(postfile['text'])
         text_del = delstopwords("".join(deltags.split()))
-        text_vec = jieba.lcut(text_del)
-        # with open(docpath + postfile['name'], 'w') as fp:
-        #     fp.write(postfile['text'].encode('utf-8'))
-        doc_bow = dictionary.doc2bow(text_vec)
-        corpus_add.append(doc_bow)
-
-        #del and
+        # text_vec = jieba.lcut(text_del)
+        # del and
         with open(news_post_add + postfile['name'], 'w') as fp:
-            fp.write(postfile['text'].encode('utf-8'))
+            fp.write(text_del)
 
     files = os.listdir(news_post_add)
     for i in files:
         shutil.copy(news_post_add + i, docpath)
 
+    from dict_stream_train import getDictionary
+    dict2 = getDictionary(lsipath=lsitemp, docpath=news_post_add)
+    dict2 = corpora.Dictionary.load(lsitemp + 'viva.dict')
 
+    from corpus_stream_train import getCorpus
+    corpus2 = getCorpus(lsipath=lsitemp, docpath=news_post_add)
+    corpus2 = corpora.MmCorpus(lsitemp + 'viva.mm')
+
+    dict2_to_dict1 = dictionary.merge_with(dict2)
+    # dict2_to_dict1.save(lsipath + 'viva2.dict')
+    # dict2_to_dict1 = corpora.Dictionary.load(lsipath + 'viva2.dict')
+
+    merged_corpus = itertools.chain(corpus_raw, dict2_to_dict1[corpus2])
+    corpora.MmCorpus.serialize(lsipath + 'viva.mm', [i for i in merged_corpus])
+    merged_corpus = corpora.MmCorpus(lsipath + 'viva.mm')
 
     # Get TF-IDF vecters of documents
-    tfidf = tfidfmodel.TfidfModel(corpus_raw)
+    tfidf = tfidfmodel.TfidfModel(merged_corpus)
     print("Building tfidf model ...")
-    corpus_tfidf = tfidf[corpus_add]
+    corpus_tfidf = tfidf[merged_corpus]
     print("Building corpus_tfidf model ...")
     # Updated LSI Model
 
-    lsi.add_documents(corpus_tfidf, chunksize=chunksize, decay=DECAY_FACTOR)
-    print("Builded lsi add documents to model ...")
-    # Updated Corpus
-    if not os.path.exists(lsipath):
-        os.mkdir(lsipath)
-    corpora.MmCorpus.serialize(lsipath + 'viva.mm', itertools.chain(corpus_raw, corpus_add))
-    # fp = open(lsitemp + 'viva_temp.mm', 'rb')
-    # textfile = fp.read()
-    # fp.close()
-    # fp = open(lsitemp + 'viva.mm', 'wb')
-    # fp.write(textfile)
-    # fp.close()
-    corpus = corpora.MmCorpus(lsipath + 'viva.mm')
+    # lsi.add_documents(corpus_tfidf, chunksize=chunksize, decay=DECAY_FACTOR)
+    # # lsi.add_documents(corpus_tfidf, chunksize=chunksize)
+    #
+    # print("Builded lsi add documents to model ...")
+    # # Updated Corpus
+    # if not os.path.exists(lsipath):
+    #     os.mkdir(lsipath)
+    # # corpus = corpora.MmCorpus.serialize(lsipath + 'viva.mm', itertools.chain(corpus_raw, corpus2))
 
-    # Updated LSI Index
-    # index = similarities.docsim.Similarity.load(lsipath + 'viva.index')
-    # index.add_documents(lsi[corpus_tfidf])
-    index = similarities.docsim.Similarity(lsipath + 'viva.index', lsi[corpus], num_features=NUM_TOPIC)
+    lsi = lsimodel.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=NUM_TOPIC, chunksize=chunksize, power_iters=2, onepass=True)  # 其他参数都是默认
 
-    # Save Models
     lsi.save(lsipath + 'viva.lsi')
+    lsi = models.lsimodel.LsiModel.load(lsipath + 'viva.lsi')
+    index = similarities.docsim.Similarity(lsipath + 'viva.index', lsi[merged_corpus], num_features=NUM_TOPIC)
+    # Save Models
+
     index.save(lsipath + 'viva.index')
     print("LSI model saved!")
 
     # Print elasped time
     t2 = time.time()
-    print "Total elapsed time is: ", t2-t_total_begin, "s"
-
-    # Shell
-    # print("Run the shell.")
-    # os.system('./after_update.sh')
-    # print("Shell done!")
-
-# def check_prefix(file_in):
-#     """
-#     baobao add for checking files prefix map
-#     :param file_in:  string
-#     :return: string
-#     """
-#     import cPickle
-#     num_in = file_in.split('_')[0]
-#
-#     prefix_filename = "./prefix_map/"
-#     if os.path.exists(prefix_filename):
-#         return file_in
-#
-#     if os.path.isfile("./prefix_map/filename_map.pkl"):
-#         fp = open("./prefix_map/filename_map.pkl", 'rb')
-#         files = cPickle.load(fp)
-#         fp.close()
-#     else:
-#         files = {}
-#
-#     for i in files:
-#         if i.split('_')[0] == num_in:
-#             return files[i]
-#         else:
-#             continue
-#     return file_in
-
-
-# def check_repet_new(result_in):
-#     """
-#     检查是否有重复的文章
-#     :param result_in: [{}{}{}]
-#     :return:[{}{}{}]
-#     """
-#     files = os.listdir("./news/")
-#     result_out = []
-#     for i in result_in:
-#         flag = False
-#         name = re.search(r'(_)(.*)', i['name']).group(2)
-#         for j in files:
-#             temp = check_prefix(j)
-#             if name.split('_')[0] == temp.split('_'):
-#                 flag = True
-#                 break
-#         if not flag:
-#             result_out.append(i)
-#     return result_out
+    print "Total elapsed time is: ", t2 - t_total_begin, "s"
 
 
 def prefix_map(result_in):
@@ -180,8 +136,9 @@ def prefix_map(result_in):
     """
     import cPickle
     import os
-    mkdir("./prefix_map/")
-    pkl_file_name = "./prefix_map/filename_map.pkl"
+    mapdir = "./prefix_map/"
+    mkdir(mapdir)
+    pkl_file_name = mapdir + "filename_map.pkl"
     if os.path.isfile(pkl_file_name):
         t_fp = open(pkl_file_name, 'rb')
         name_dict = cPickle.load(t_fp)
@@ -192,19 +149,20 @@ def prefix_map(result_in):
 
     # Get max prefix value
     files = os.listdir("./news/")
-    files_order = sorted(files, key=lambda x: (int(re.search(r'([0-9]+)(_)', x).group(1)),x))
+    files_order = sorted(files, key=lambda x: (int(re.search(r'([0-9]+)(_)', x).group(1)), x))
     max_prefix = int(re.search(r'([0-9]+)(_)', files_order[-1]).group(1)) + 1
     result_out = []
-    fp = open("./prefix_map/filename_map.pkl", 'wb')
+    fp = open(pkl_file_name, 'wb')
     for i in result_in:
         old_name = i['name']
         new_name = re.sub(r'([0-9]+)(_)', str(max_prefix) + '_', old_name)
         name_dict[new_name] = old_name
         max_prefix += 1
-        result_out.append({'name':new_name, 'text':i['text']})
+        result_out.append({'name': new_name, 'text': i['text']})
     cPickle.dump(name_dict, fp)
     fp.close()
     return result_out
+
 
 def stripTags(s):
     ''' Strips HTML tags.
@@ -222,6 +180,8 @@ def stripTags(s):
         return True
 
     return ''.join(c for c in s if chk(c))
+
+
 def mkdir(path):
     # 引入模块
     import os
@@ -248,7 +208,8 @@ def mkdir(path):
         print path + ' 目录已存在'
         return False
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     # result = [
     #     # {'name':u'4_不能写入二', 'text':u'<p>“ 这些照片拍摄于1925年，看到这些照片后,希特勒要求霍夫曼毁掉底片，但他没有照做。而是发表在他的回忆录“希特勒是我的朋友”中，1955年出版。</p><p>1925年希特勒在镜子前练习演讲,</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width9238f74daf98ae5e07e71ca6c0a546d448da63dc.jpg\"></span></p><p>希特勒的演讲不单单只是抓住了人民的心底最可怕的好战情绪和第一次战败的耻辱。更关键的是。在他演讲的时候。你完全不会觉得他是在有意的让你去做某些事情。</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width058a206e9d52ef5580b9fa9d2ca34b7bf4eb7e29.jpg\"></span></p><p>希特勒的某些细节把握的非常好。他知道听众要听什么。</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width990ceb2ee4bc0e269966acca5655337d35e350f4.jpg\"></span></p><p>希特勒的演讲像是一个歌手在开演唱会，他能细腻的表达和抓住观众的心情，从而制造出 最大的 欢呼声。在不知不觉中 民众就会 陷入 狂热状态。失去理智，从而坚定信念。</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width30afbd98af5082d906f6fce5a694e31e58810e8a.jpg\"></span></p><p>希特勒所演讲的内容。和他内心高度统一。所以他是在释放他狂热的思想。完全不会显得做作。所以大家找不出他的虚假。更真实更狂热。</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width897f307f8d7cf78353ea59cee43f4e7749d50bb2.jpg\"></span></p><p>宣传最好的办法就是在对方还未察觉你的动态时直接灌输与他们你的思想。希特勒就是这样。</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width98022df90102c66c84d961754aed69a43fdbdc7a.jpg\"></span></p><p>真实可信。狂热民族主义。都是他的演讲成功的重要手段。从而成为他掌握国家走向的正治手段。</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width43e17deda875f50fdef1713292315ed0b043f506.jpg\"></span></p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width1bf20e753c9726299cc0cb06f850894296e23c25.jpg\"></span></p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width1735c6f9af92af90d2f331825f442d24ded13d13.jpg\"></span></p>","name":"3546083768298267441_图志丨1925年希特勒在镜子前练习演讲的照片曝光'},
     #     # {'name':u'4036351344334950000000000003014_探索涠洲岛的各种可能性', 'text':u'探索涠洲岛可能性中国国家旅游2015月刊涠洲岛位于北部湾中部中国最大地质年龄年轻火山岛中国确认火山地质遗迹已有不少唯一海岛建立火山地质遗迹保护区涠洲岛面积大约25平方公里鼓浪屿倍流量控制每天允许岛游客数量相当于鼓浪屿实际上岛游客没有太商业化矫饰深蓝色海等待挖掘旅行无限可能完探索涠洲岛可能性中国国家旅游2015月刊涠洲岛位于北部湾中部中国最大地质年龄年轻火山岛中国确认火山地质遗迹已有不少唯一海岛建立火山地质遗迹保护区涠洲岛面积大约25平方公里鼓浪屿倍流量控制每天允许岛游客数量相当于鼓浪屿实际上岛游客没有太商业化矫饰深蓝色海等待挖掘旅行无限可能完探索涠洲岛可能性中国国家旅游2015月刊涠洲岛位于北部湾中部中国最大地质年龄年轻火山岛中国确认火山地质遗迹已有不少唯一海岛建立火山地质遗迹保护区涠洲岛面积大约25平方公里鼓浪屿倍流量控制每天允许岛游客数量相当于鼓浪屿实际上岛游客没有太商业化矫饰深蓝色海等待挖掘旅行无限可能完探索涠洲岛可能性中国国家旅游2015月刊涠洲岛位于北部湾中部中国最大地质年龄年轻火山岛中国确认火山地质遗迹已有不少唯一海岛建立火山地质遗迹保护区涠洲岛面积大约25平方公里鼓浪屿倍流量控制每天允许岛游客数量相当于鼓浪屿实际上岛游客没有太商业化矫饰深蓝色海等待挖掘旅行无限可能完'},
@@ -258,23 +219,18 @@ if __name__=='__main__':
     #     # {'name':u'2_14天魔鬼训练，天使身材', 'text':u'魔鬼训练天使身材健康女性2015月刊反手摸肚脐腰腹上线锁骨搁硬币无敌长腿网络传播人际传播整个夏天生生女人心理崩溃节奏不要焦虑WH做好全盘准备急救计划让你在数据比较变得充满说服力据说现在社交网络流行带头拍最让人自豪照片永远炫腹一种比照坚持跑步练习平板三个之后看到腹部刚出现线条Instagram上有非常受欢迎修身教练乔伊维克斯Instagram发布研究设计修身计划型瘦Leanin15健康餐单分钟之内准备健康瘦身餐指导身体发生意想不到改变绝对滤镜美图真的诚意做出改变心愿迫切维克斯便是找男人WH出难题必须周之内看到效果型瘦分钟练习接下来天里只能休息足套修身训练每套训练之前分钟热身热身必须针对性膝盖原地慢走箭步蹲必须做好拉伸需要一副哑铃受力东西才能真正帮消耗脂肪打造美好肌肉线条还要高低合适椅子健身垫身体推向极限意味着感觉累累维克斯指出才能充分提高新陈代谢效率脂肪才得到燃烧第一天有氧训练第二天上半身训练第三天有氧训练第四天下半身训练第五天休息第六天有氧训练第七天休息第八天休息第九天上半身训练第十天有氧训练第十一天下半身训练第十二天休息第十三天全身训练第十四天全身训练有氧训练每个动作练习至少秒休息40秒循环至少重复1.交叉登山式时间秒目标核心肌肉三头肌股四头肌做好平板式俯卧撑体式身体一条直线提高右脚触碰肩收回右脚换边练习提速2.蛙腿时间秒目标全身初始动作俯卧撑双手分开稍稍超过肩宽右脚向前放在右手外侧看起来蓄势待发青蛙腿后撤不停转换左右两边进行练习3.抬膝运动时间秒目标腿髋部屈肌站双臂弯曲呈直角手肘紧贴身体两边手掌朝向地面加速原地跑每次尽量膝盖抬到最高手掌触碰到大腿膝盖4.摆臂运动时间秒目标手臂肩膀胸部身体保持直立弯曲双臂贴身体两侧最快速度向前摆动手臂身体一定保持静止不动看上去奇怪绝对帮甩掉拜拜肉5.跃身跳时间秒目标全身站蹲下双手身体前方摸地双腿跳形成平板式俯卧撑收回双脚空中用力跃起膝盖触碰到胸部上半身训练30秒次数尽可能身体姿势走形休息30秒重复至少可能觉得好像垮掉1.椅子三头肌下沉练习时间30秒目标三头肌肩膀背部坐在椅子慢慢滑椅子向前伸直双腿放在对面一把椅子上半身滑出椅子双手撑住椅面双脚双手支撑身体重量放低手臂形成直角反向俯卧撑重复拜拜拜拜肉2.半俯卧撑时间30秒目标手臂肩膀胸部核心肌肉背部手臂平板式双手放在身体正下方肩膀稍稍宽出一点点伸直身体放低身体地面慢慢贴近身体地面保持平行保持秒继续放低胸部好像刚刚要触碰到地面推回到平板式初始动作第二天知道厉害3.屈腕卷二头肌时间30秒目标二头肌双手举一只哑铃手掌朝向天花板内弯曲手腕上半部分手臂保持静止向上抬哑铃呼气吸气放低哑铃重复练习4.弯曲划桨时间30秒目标背部手臂双脚分开肩宽双手握一只哑铃微微弯曲双膝慢慢向上拉回哑铃过程双臂紧贴身体两侧收紧肩胛骨5.肩推哑铃时间30秒目标背部三头肌坐在椅子双腿收紧双手握住一只哑铃高举双臂肩膀高度手肘弯曲正好形成直角掌心向前放低重复练习下半身训练每个练习至少30秒休息30秒最后全套练习重复全新美美翘臀正在1.哑铃拱桥式时间30秒目标臀肌跟腱平躺地面弯曲膝盖一只哑铃放在骨盆抬高臀部身体形成一条直线来回重复动作抬高用力收紧臀部肌肉感受一股力量2.平行溜冰式时间30秒目标股肌跟腱双脚分开臀宽右脚向前左腿手臂甩漂亮注意套动作连贯性带爆发力特别转换左右两边3.快速箭步蹲时间30秒目标腿部臀肌站左脚向前左腿形成直角放下右膝几乎触碰到地面向上跳换边蹲下形成一个箭步蹲越快越好可别腿叠一块儿4.空中蛙跳时间30秒目标股肌臀肌快速站起身双脚分开肩宽半蹲挺直胸部背部充分利用腹肌力量向上跳身体旋转180度向下地时身体再次旋转原来位置5.相扑蹲时间30秒目标腿股肌臀部双脚分开肩宽约1.5倍脚趾打开双手抓住一只哑铃放在胸前蛙蹲脚跟保持挺直背部不断练习向下蹲加油全身训练OK最后冲刺阶段以下30秒练习30秒休息重复至少想要抬膝运动半俯卧撑跃身跳空中蛙跳交叉登山式完魔鬼训练天使身材健康女性2015月刊反手摸肚脐腰腹上线锁骨搁硬币无敌长腿网络传播人际传播整个夏天生生女人心理崩溃节奏不要焦虑WH做好全盘准备急救计划让你在数据比较变得充满说服力据说现在社交网络流行带头拍最让人自豪照片永远炫腹一种比照坚持跑步练习平板三个之后看到腹部刚出现线条Instagram上有非常受欢迎修身教练乔伊维克斯Instagram发布研究设计修身计划型瘦Leanin15健康餐单分钟之内准备健康瘦身餐指导身体发生意想不到改变绝对滤镜美图真的诚意做出改变心愿迫切维克斯便是找男人WH出难题必须周之内看到效果型瘦分钟练习接下来天里只能休息足套修身训练每套训练之前分钟热身热身必须针对性膝盖原地慢走箭步蹲必须做好拉伸需要一副哑铃受力东西才能真正帮消耗脂肪打造美好肌肉线条还要高低合适椅子健身垫身体推向极限意味着感觉累累维克斯指出才能充分提高新陈代谢效率脂肪才得到燃烧第一天有氧训练第二天上半身训练第三天有氧训练第四天下半身训练第五天休息第六天有氧训练第七天休息第八天休息第九天上半身训练第十天有氧训练第十一天下半身训练第十二天休息第十三天全身训练第十四天全身训练有氧训练每个动作练习至少秒休息40秒循环至少重复1.交叉登山式时间秒目标核心肌肉三头肌股四头肌做好平板式俯卧撑体式身体一条直线提高右脚触碰肩收回右脚换边练习提速2.蛙腿时间秒目标全身初始动作俯卧撑双手分开稍稍超过肩宽右脚向前放在右手外侧看起来蓄势待发青蛙腿后撤不停转换左右两边进行练习3.抬膝运动时间秒目标腿髋部屈肌站双臂弯曲呈直角手肘紧贴身体两边手掌朝向地面加速原地跑每次尽量膝盖抬到最高手掌触碰到大腿膝盖4.摆臂运动时间秒目标手臂肩膀胸部身体保持直立弯曲双臂贴身体两侧最快速度向前摆动手臂身体一定保持静止不动看上去奇怪绝对帮甩掉拜拜肉5.跃身跳时间秒目标全身站蹲下双手身体前方摸地双腿跳形成平板式俯卧撑收回双脚空中用力跃起膝盖触碰到胸部上半身训练30秒次数尽可能身体姿势走形休息30秒重复至少可能觉得好像垮掉1.椅子三头肌下沉练习时间30秒目标三头肌肩膀背部坐在椅子慢慢滑椅子向前伸直双腿放在对面一把椅子上半身滑出椅子双手撑住椅面双脚双手支撑身体重量放低手臂形成直角反向俯卧撑重复拜拜拜拜肉2.半俯卧撑时间30秒目标手臂肩膀胸部核心肌肉背部手臂平板式双手放在身体正下方肩膀稍稍宽出一点点伸直身体放低身体地面慢慢贴近身体地面保持平行保持秒继续放低胸部好像刚刚要触碰到地面推回到平板式初始动作第二天知道厉害3.屈腕卷二头肌时间30秒目标二头肌双手举一只哑铃手掌朝向天花板内弯曲手腕上半部分手臂保持静止向上抬哑铃呼气吸气放低哑铃重复练习4.弯曲划桨时间30秒目标背部手臂双脚分开肩宽双手握一只哑铃微微弯曲双膝慢慢向上拉回哑铃过程双臂紧贴身体两侧收紧肩胛骨5.肩推哑铃时间30秒目标背部三头肌坐在椅子双腿收紧双手握住一只哑铃高举双臂肩膀高度手肘弯曲正好形成直角掌心向前放低重复练习下半身训练每个练习至少30秒休息30秒最后全套练习重复全新美美翘臀正在1.哑铃拱桥式时间30秒目标臀肌跟腱平躺地面弯曲膝盖一只哑铃放在骨盆抬高臀部身体形成一条直线来回重复动作抬高用力收紧臀部肌肉感受一股力量2.平行溜冰式时间30秒目标股肌跟腱双脚分开臀宽右脚向前左腿手臂甩漂亮注意套动作连贯性带爆发力特别转换左右两边3.快速箭步蹲时间30秒目标腿部臀肌站左脚向前左腿形成直角放下右膝几乎触碰到地面向上跳换边蹲下形成一个箭步蹲越快越好可别腿叠一块儿4.空中蛙跳时间30秒目标股肌臀肌快速站起身双脚分开肩宽半蹲挺直胸部背部充分利用腹肌力量向上跳身体旋转180度向下地时身体再次旋转原来位置5.相扑蹲时间30秒目标腿股肌臀部双脚分开肩宽约1.5倍脚趾打开双手抓住一只哑铃放在胸前蛙蹲脚跟保持挺直背部不断练习向下蹲加油全身训练OK最后冲刺阶段以下30秒练习30秒休息重复至少想要抬膝运动半俯卧撑跃身跳空中蛙跳交叉登山式完魔鬼训练天使身材健康女性2015月刊反手摸肚脐腰腹上线锁骨搁硬币无敌长腿网络传播人际传播整个夏天生生女人心理崩溃节奏不要焦虑WH做好全盘准备急救计划让你在数据比较变得充满说服力据说现在社交网络流行带头拍最让人自豪照片永远炫腹一种比照坚持跑步练习平板三个之后看到腹部刚出现线条Instagram上有非常受欢迎修身教练乔伊维克斯Instagram发布研究设计修身计划型瘦Leanin15健康餐单分钟之内准备健康瘦身餐指导身体发生意想不到改变绝对滤镜美图真的诚意做出改变心愿迫切维克斯便是找男人WH出难题必须周之内看到效果型瘦分钟练习接下来天里只能休息足套修身训练每套训练之前分钟热身热身必须针对性膝盖原地慢走箭步蹲必须做好拉伸需要一副哑铃受力东西才能真正帮消耗脂肪打造美好肌肉线条还要高低合适椅子健身垫身体推向极限意味着感觉累累维克斯指出才能充分提高新陈代谢效率脂肪才得到燃烧第一天有氧训练第二天上半身训练第三天有氧训练第四天下半身训练第五天休息第六天有氧训练第七天休息第八天休息第九天上半身训练第十天有氧训练第十一天下半身训练第十二天休息第十三天全身训练第十四天全身训练有氧训练每个动作练习至少秒休息40秒循环至少重复1.交叉登山式时间秒目标核心肌肉三头肌股四头肌做好平板式俯卧撑体式身体一条直线提高右脚触碰肩收回右脚换边练习提速2.蛙腿时间秒目标全身初始动作俯卧撑双手分开稍稍超过肩宽右脚向前放在右手外侧看起来蓄势待发青蛙腿后撤不停转换左右两边进行练习3.抬膝运动时间秒目标腿髋部屈肌站双臂弯曲呈直角手肘紧贴身体两边手掌朝向地面加速原地跑每次尽量膝盖抬到最高手掌触碰到大腿膝盖4.摆臂运动时间秒目标手臂肩膀胸部身体保持直立弯曲双臂贴身体两侧最快速度向前摆动手臂身体一定保持静止不动看上去奇怪绝对帮甩掉拜拜肉5.跃身跳时间秒目标全身站蹲下双手身体前方摸地双腿跳形成平板式俯卧撑收回双脚空中用力跃起膝盖触碰到胸部上半身训练30秒次数尽可能身体姿势走形休息30秒重复至少可能觉得好像垮掉1.椅子三头肌下沉练习时间30秒目标三头肌肩膀背部坐在椅子慢慢滑椅子向前伸直双腿放在对面一把椅子上半身滑出椅子双手撑住椅面双脚双手支撑身体重量放低手臂形成直角反向俯卧撑重复拜拜拜拜肉2.半俯卧撑时间30秒目标手臂肩膀胸部核心肌肉背部手臂平板式双手放在身体正下方肩膀稍稍宽出一点点伸直身体放低身体地面慢慢贴近身体地面保持平行保持秒继续放低胸部好像刚刚要触碰到地面推回到平板式初始动作第二天知道厉害3.屈腕卷二头肌时间30秒目标二头肌双手举一只哑铃手掌朝向天花板内弯曲手腕上半部分手臂保持静止向上抬哑铃呼气吸气放低哑铃重复练习4.弯曲划桨时间30秒目标背部手臂双脚分开肩宽双手握一只哑铃微微弯曲双膝慢慢向上拉回哑铃过程双臂紧贴身体两侧收紧肩胛骨5.肩推哑铃时间30秒目标背部三头肌坐在椅子双腿收紧双手握住一只哑铃高举双臂肩膀高度手肘弯曲正好形成直角掌心向前放低重复练习下半身训练每个练习至少30秒休息30秒最后全套练习重复全新美美翘臀正在1.哑铃拱桥式时间30秒目标臀肌跟腱平躺地面弯曲膝盖一只哑铃放在骨盆抬高臀部身体形成一条直线来回重复动作抬高用力收紧臀部肌肉感受一股力量2.平行溜冰式时间30秒目标股肌跟腱双脚分开臀宽右脚向前左腿手臂甩漂亮注意套动作连贯性带爆发力特别转换左右两边3.快速箭步蹲时间30秒目标腿部臀肌站左脚向前左腿形成直角放下右膝几乎触碰到地面向上跳换边蹲下形成一个箭步蹲越快越好可别腿叠一块儿4.空中蛙跳时间30秒目标股肌臀肌快速站起身双脚分开肩宽半蹲挺直胸部背部充分利用腹肌力量向上跳身体旋转180度向下地时身体再次旋转原来位置5.相扑蹲时间30秒目标腿股肌臀部双脚分开肩宽约1.5倍脚趾打开双手抓住一只哑铃放在胸前蛙蹲脚跟保持挺直背部不断练习向下蹲加油全身训练OK最后冲刺阶段以下30秒练习30秒休息重复至少想要抬膝运动半俯卧撑跃身跳空中蛙跳交叉登山式完魔鬼训练天使身材健康女性2015月刊反手摸肚脐腰腹上线锁骨搁硬币无敌长腿网络传播人际传播整个夏天生生女人心理崩溃节奏不要焦虑WH做好全盘准备急救计划让你在数据比较变得充满说服力据说现在社交网络流行带头拍最让人自豪照片永远炫腹一种比照坚持跑步练习平板三个之后看到腹部刚出现线条Instagram上有非常受欢迎修身教练乔伊维克斯Instagram发布研究设计修身计划型瘦Leanin15健康餐单分钟之内准备健康瘦身餐指导身体发生意想不到改变绝对滤镜美图真的诚意做出改变心愿迫切维克斯便是找男人WH出难题必须周之内看到效果型瘦分钟练习接下来天里只能休息足套修身训练每套训练之前分钟热身热身必须针对性膝盖原地慢走箭步蹲必须做好拉伸需要一副哑铃受力东西才能真正帮消耗脂肪打造美好肌肉线条还要高低合适椅子健身垫身体推向极限意味着感觉累累维克斯指出才能充分提高新陈代谢效率脂肪才得到燃烧第一天有氧训练第二天上半身训练第三天有氧训练第四天下半身训练第五天休息第六天有氧训练第七天休息第八天休息第九天上半身训练第十天有氧训练第十一天下半身训练第十二天休息第十三天全身训练第十四天全身训练有氧训练每个动作练习至少秒休息40秒循环至少重复1.交叉登山式时间秒目标核心肌肉三头肌股四头肌做好平板式俯卧撑体式身体一条直线提高右脚触碰肩收回右脚换边练习提速2.蛙腿时间秒目标全身初始动作俯卧撑双手分开稍稍超过肩宽右脚向前放在右手外侧看起来蓄势待发青蛙腿后撤不停转换左右两边进行练习3.抬膝运动时间秒目标腿髋部屈肌站双臂弯曲呈直角手肘紧贴身体两边手掌朝向地面加速原地跑每次尽量膝盖抬到最高手掌触碰到大腿膝盖4.摆臂运动时间秒目标手臂肩膀胸部身体保持直立弯曲双臂贴身体两侧最快速度向前摆动手臂身体一定保持静止不动看上去奇怪绝对帮甩掉拜拜肉5.跃身跳时间秒目标全身站蹲下双手身体前方摸地双腿跳形成平板式俯卧撑收回双脚空中用力跃起膝盖触碰到胸部上半身训练30秒次数尽可能身体姿势走形休息30秒重复至少可能觉得好像垮掉1.椅子三头肌下沉练习时间30秒目标三头肌肩膀背部坐在椅子慢慢滑椅子向前伸直双腿放在对面一把椅子上半身滑出椅子双手撑住椅面双脚双手支撑身体重量放低手臂形成直角反向俯卧撑重复拜拜拜拜肉2.半俯卧撑时间30秒目标手臂肩膀胸部核心肌肉背部手臂平板式双手放在身体正下方肩膀稍稍宽出一点点伸直身体放低身体地面慢慢贴近身体地面保持平行保持秒继续放低胸部好像刚刚要触碰到地面推回到平板式初始动作第二天知道厉害3.屈腕卷二头肌时间30秒目标二头肌双手举一只哑铃手掌朝向天花板内弯曲手腕上半部分手臂保持静止向上抬哑铃呼气吸气放低哑铃重复练习4.弯曲划桨时间30秒目标背部手臂双脚分开肩宽双手握一只哑铃微微弯曲双膝慢慢向上拉回哑铃过程双臂紧贴身体两侧收紧肩胛骨5.肩推哑铃时间30秒目标背部三头肌坐在椅子双腿收紧双手握住一只哑铃高举双臂肩膀高度手肘弯曲正好形成直角掌心向前放低重复练习下半身训练每个练习至少30秒休息30秒最后全套练习重复全新美美翘臀正在1.哑铃拱桥式时间30秒目标臀肌跟腱平躺地面弯曲膝盖一只哑铃放在骨盆抬高臀部身体形成一条直线来回重复动作抬高用力收紧臀部肌肉感受一股力量2.平行溜冰式时间30秒目标股肌跟腱双脚分开臀宽右脚向前左腿手臂甩漂亮注意套动作连贯性带爆发力特别转换左右两边3.快速箭步蹲时间30秒目标腿部臀肌站左脚向前左腿形成直角放下右膝几乎触碰到地面向上跳换边蹲下形成一个箭步蹲越快越好可别腿叠一块儿4.空中蛙跳时间30秒目标股肌臀肌快速站起身双脚分开肩宽半蹲挺直胸部背部充分利用腹肌力量向上跳身体旋转180度向下地时身体再次旋转原来位置5.相扑蹲时间30秒目标腿股肌臀部双脚分开肩宽约1.5倍脚趾打开双手抓住一只哑铃放在胸前蛙蹲脚跟保持挺直背部不断练习向下蹲加油全身训练OK最后冲刺阶段以下30秒练习30秒休息重复至少想要抬膝运动半俯卧撑跃身跳空中蛙跳交叉登山式完'},
     #     # {'name':u'3_不能写入一', 'text':u'<p>“ 这些照片拍摄于1925年，看到这些照片后,希特勒要求霍夫曼毁掉底片，但他没有照做。而是发表在他的回忆录“希特勒是我的朋友”中，1955年出版。</p><p>1925年希特勒在镜子前练习演讲,</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width9238f74daf98ae5e07e71ca6c0a546d448da63dc.jpg\"></span></p><p>希特勒的演讲不单单只是抓住了人民的心底最可怕的好战情绪和第一次战败的耻辱。更关键的是。在他演讲的时候。你完全不会觉得他是在有意的让你去做某些事情。</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width058a206e9d52ef5580b9fa9d2ca34b7bf4eb7e29.jpg\"></span></p><p>希特勒的某些细节把握的非常好。他知道听众要听什么。</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width990ceb2ee4bc0e269966acca5655337d35e350f4.jpg\"></span></p><p>希特勒的演讲像是一个歌手在开演唱会，他能细腻的表达和抓住观众的心情，从而制造出 最大的 欢呼声。在不知不觉中 民众就会 陷入 狂热状态。失去理智，从而坚定信念。</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width30afbd98af5082d906f6fce5a694e31e58810e8a.jpg\"></span></p><p>希特勒所演讲的内容。和他内心高度统一。所以他是在释放他狂热的思想。完全不会显得做作。所以大家找不出他的虚假。更真实更狂热。</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width897f307f8d7cf78353ea59cee43f4e7749d50bb2.jpg\"></span></p><p>宣传最好的办法就是在对方还未察觉你的动态时直接灌输与他们你的思想。希特勒就是这样。</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width98022df90102c66c84d961754aed69a43fdbdc7a.jpg\"></span></p><p>真实可信。狂热民族主义。都是他的演讲成功的重要手段。从而成为他掌握国家走向的正治手段。</p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width43e17deda875f50fdef1713292315ed0b043f506.jpg\"></span></p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width1bf20e753c9726299cc0cb06f850894296e23c25.jpg\"></span></p><p><span class=\"imgspan\"><img  src=\"http://img.contx.cn/article/2016-01-11/1001798/$content_width1735c6f9af92af90d2f331825f442d24ded13d13.jpg\"></span></p>","name":"3546083768298267441_图志丨1925年希特勒在镜子前练习演讲的照片曝光'}
     # ]
-    # file_path = "./news_added/"
-    file_path = "./news_post_add/"
     # num_added = 100
-    files = os.listdir(file_path)
+    files = os.listdir(news_post_add)
     num_files = len(files)
     result = []
     print("%s files in \"news_added\"." % num_files)
     for i in range(num_files):
         file_name = files[i]
-        t_fp = open(file_path + file_name, 'rb')
+        t_fp = open(news_post_add + file_name, 'rb')
         text = t_fp.read()
         t_fp.close()
         result.append({'name': file_name.decode('utf-8'), 'text': text.decode('utf-8')})
 
-
-    shutil.rmtree(file_path)
+    shutil.rmtree(news_post_add)
 
     sim_update(result)
-
-

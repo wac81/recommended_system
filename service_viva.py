@@ -15,9 +15,9 @@ from flask import Flask, request, abort,g,current_app
 # from werkzeug.contrib.fixers import ProxyFix
 app = Flask(__name__)
 
-project_path = './'
-docpath='/home/workspace/news'
-pkl_file_name = "./prefix_map/filename_map.pkl"
+project_path = u'/home/workspace/'
+docpath=u'/home/workspace/news'
+pkl_file_name = project_path + u"prefix_map/filename_map.pkl"
 
 # @app.before_first_request
 # @app.before_request
@@ -30,7 +30,7 @@ def appd():
     app.config['lsi'] = models.lsimodel.LsiModel.load(project_path + 'lsi/' + 'viva.lsi')
     # app.config['index'] = similarities.MatrixSimilarity.load(project_path + 'lsi/' + 'viva.index')
     app.config['index'] = similarities.docsim.Similarity.load(project_path + 'lsi/' + 'viva.index')
-    files = os.listdir('./news/')
+    files = os.listdir(project_path + 'news')
     app.config['files'] = sorted(files, key=lambda x: (int(re.search(r'([0-9]+)(_)', x).group(1)),x))
 
     if os.path.isfile(pkl_file_name):
@@ -112,7 +112,7 @@ def check_prefix(file_in):
     # try:
     #     file_a = file_in.decode('gbk')
     # except Exception as e:
-    file_a = file_in.decode('utf-8')
+    file_a = file_in
 
     # try:
     #     fp = open(, 'rb')
@@ -121,10 +121,11 @@ def check_prefix(file_in):
     # except Exception as e:
     #     files = {}
     filesd = app.config['files_dict']
-
+    # print filesd
+    # print file_a
 
     if file_a in filesd.keys():
-        # print("From dict %s" % file_a)
+        print("From dict %s" % file_a)
         return filesd[file_a]
     else:
         # print("From news %s" % file_in)
@@ -164,7 +165,7 @@ def similar_search(request):
         # print ss[i]
         # print ss[i][0]
         # print files[299]
-        print ss[i][0]
+        # print ss[i][0]
         fileid=files[ss[i][0]]
 
         # baobao add 1 line

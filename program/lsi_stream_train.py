@@ -53,7 +53,7 @@ def getLsiModel(lsipath='./lsi/', num_topics=300):
     # lsi = lsimodel.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=num_topics,chunksize=20000)
     lsi = None
     try:
-         lsi = lsimodel.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=num_topics, chunksize=40000, power_iters=2, onepass=True)  #其他参数都是默认
+         lsi = lsimodel.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=num_topics, chunksize=60000, power_iters=2, onepass=True)  #其他参数都是默认
          lsi.save(lsipath  + 'viva.lsi')
          print('lsi模型保存完毕')
     except (SystemExit, KeyboardInterrupt):
